@@ -1,7 +1,6 @@
 """ColPali model wrapper for vision-language understanding."""
 
 import gc
-import os
 from typing import Optional, Union
 
 import numpy as np
@@ -19,6 +18,26 @@ from colpali_engine.models import (
 from PIL import Image
 
 from ..utils.timer import Timer
+
+
+def get_device() -> str:
+    """Get the best available device dynamically."""
+    if torch.cuda.is_available():
+        return "cuda"
+    elif torch.backends.mps.is_available():
+        return "mps"
+    else:
+        return "cpu"
+
+
+def clear_device_cache(device: str):
+    """Clear cache for the specified device."""
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    elif device == "mps":
+        torch.mps.empty_cache()
+    else:
+        gc.collect()
 
 
 class ColPaliModel:
@@ -50,37 +69,33 @@ class ColPaliModel:
 
         self.pretrained_model_name_or_path = pretrained_model_name_or_path
         self.model_dtype = model_dtype
-        device = device or (
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available() else "cpu"
-        )
+        self.device = device or get_device()
 
         if "colpali" in pretrained_model_name_or_path.lower():
             self.model = ColPali.from_pretrained(
                 self.pretrained_model_name_or_path,
-                device_map=device,
+                device_map=self.device,
                 torch_dtype=self.model_dtype,
                 # token=kwargs.get("hf_token", None) or os.environ.get("HF_TOKEN"),
             )
         elif "colqwen2.5" in pretrained_model_name_or_path.lower():
             self.model = ColQwen2_5.from_pretrained(
                 self.pretrained_model_name_or_path,
-                device_map=device,
+                device_map=self.device,
                 torch_dtype=self.model_dtype,
                 # token=kwargs.get("hf_token", None) or os.environ.get("HF_TOKEN"),
             )
         elif "colqwen2" in pretrained_model_name_or_path.lower():
             self.model = ColQwen2.from_pretrained(
                 self.pretrained_model_name_or_path,
-                device_map=device,
+                device_map=self.device,
                 torch_dtype=self.model_dtype,
                 # token=kwargs.get("hf_token", None) or os.environ.get("HF_TOKEN"),
             )
         elif "colsmol" in pretrained_model_name_or_path.lower():
             self.model = ColIdefics3.from_pretrained(
                 self.pretrained_model_name_or_path,
-                device_map=device,
+                device_map=self.device,
                 torch_dtype=self.model_dtype,
                 # token=kwargs.get("hf_token", None) or os.environ.get("HF_TOKEN"),
             )
@@ -137,7 +152,7 @@ class ColPaliModel:
             batch_text = self.processor.process_texts(texts).to(self.model.device)
             embeddings = self.model(**batch_text).detach().cpu().float().numpy()
         del batch_text
-        torch.cuda.empty_cache()
+        clear_device_cache(self.device)
         return embeddings
 
     def encode_images(
@@ -150,7 +165,7 @@ class ColPaliModel:
             batch_images = self.processor.process_images(images).to(self.model.device)
             embeddings = self.model(**batch_images).detach().cpu().float().numpy()
         del batch_images
-        torch.cuda.empty_cache()
+        clear_device_cache(self.device)
         return embeddings
 
     def get_patches(self, image_size: tuple[int, int]) -> tuple[int, int]:
@@ -174,7 +189,7 @@ class ColPaliModel:
         tokenized_images = processed_images.input_ids
 
         del processed_images
-        torch.cuda.empty_cache()
+        clear_device_cache(self.device)
 
         # mean pooling
         pooled_by_rows_batch = []
@@ -253,7 +268,6 @@ class ColPaliModel:
         image_embeddings = image_embeddings.cpu().float().numpy().tolist()
 
         del tokenized_images
-        torch.cuda.empty_cache()
-        gc.collect()
+        clear_device_cache(self.device)
 
         return image_embeddings, pooled_by_rows_batch, pooled_by_columns_batch

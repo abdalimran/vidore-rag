@@ -131,7 +131,7 @@ import torch
 rag = RAG(
     rag_model="vidore/colSmol-500M",
     model_dtype=torch.float16,
-    device="cuda",
+    # device will be auto-detected (cuda/mps/cpu)
     index_path="./custom_index",
     collection_name="my_docs"
 )

@@ -23,10 +23,10 @@ class RAG:
 
     def __init__(
         self,
-        rag_model: str = "vidore/colSmol-500M",
+        rag_model: str = "vidore/colqwen2-v1.0",
         model_dtype: torch.dtype = torch.bfloat16,
         device: Optional[Union[str, torch.device]] = None,
-        index_path: str = "./index",
+        index_path: str = "./vector_store",
         collection_name: str = "rag",
     ) -> None:
         """Initialize the RAG system.

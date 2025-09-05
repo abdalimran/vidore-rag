@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from vidore_rag import RAG
+from src import RAG
 
 # Load environment variables
 load_dotenv(".env")

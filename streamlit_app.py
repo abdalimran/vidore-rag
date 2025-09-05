@@ -2,12 +2,17 @@
 
 import os
 import tempfile
+import uuid
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
 
 from src import RAG
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 
 # Load environment variables
 load_dotenv()
@@ -40,11 +45,17 @@ if "last_images" not in st.session_state:
     st.session_state.last_images = None
 if "show_results" not in st.session_state:
     st.session_state.show_results = False
+if "collection_created" not in st.session_state:
+    st.session_state.collection_created = False
 
 def initialize_rag():
     """Initialize the RAG system."""
     if st.session_state.rag is None:
         try:
+            # Ensure uploaded_pdfs directory exists
+            uploaded_pdfs_dir = Path("uploaded_pdfs")
+            uploaded_pdfs_dir.mkdir(exist_ok=True)
+
             with st.spinner("Initializing RAG system..."):
                 st.session_state.rag = RAG("vidore/colpali-v1.3")
             st.success("RAG system initialized successfully!")
@@ -53,6 +64,20 @@ def initialize_rag():
             return False
     return True
 
+def setup_collection():
+    """Set up a new collection with timestamp-based name."""
+    if not st.session_state.collection_created:
+        # Generate dynamic collection name based on timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        collection_name = f"rag_{timestamp}"
+
+        # Set the collection name in the vector store
+        st.session_state.rag.vector_store.collection_name = collection_name
+        st.session_state.collection_created = True
+        st.info(f"Created new collection: {collection_name}")
+        return collection_name
+    return st.session_state.rag.vector_store.collection_name
+
 def index_pdf_file(uploaded_file):
     """Index an uploaded PDF file."""
     if st.session_state.rag is None:
@@ -60,20 +85,27 @@ def index_pdf_file(uploaded_file):
         return False
 
     try:
-        # Save uploaded file to temporary location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.getvalue())
-            tmp_path = Path(tmp_file.name)
+        # Ensure collection is set up before indexing
+        setup_collection()
+
+        # Get uploaded_pdfs directory (already created during initialization)
+        uploaded_pdfs_dir = Path("uploaded_pdfs")
+
+        # Generate unique filename to avoid conflicts
+        file_extension = Path(uploaded_file.name).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        pdf_path = uploaded_pdfs_dir / unique_filename
+
+        # Save uploaded file to permanent location
+        with open(pdf_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
 
         with st.spinner(f"Indexing {uploaded_file.name}..."):
-            st.session_state.rag.index_file(pdf_path=tmp_path, batch_size=1)
+            st.session_state.rag.index_file(pdf_path=pdf_path, batch_size=1)
 
-        # Clean up temporary file
-        tmp_path.unlink()
-
-        # Track indexed files
-        if uploaded_file.name not in st.session_state.indexed_files:
-            st.session_state.indexed_files.append(uploaded_file.name)
+        # Track indexed files (store the unique filename for reference)
+        if unique_filename not in st.session_state.indexed_files:
+            st.session_state.indexed_files.append(unique_filename)
 
         st.success(f"Successfully indexed {uploaded_file.name}")
         return True

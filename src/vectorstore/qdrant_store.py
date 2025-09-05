@@ -13,7 +13,7 @@ class QdrantVectorStore:
     """Qdrant vector store for managing document embeddings."""
 
     def __init__(
-        self, index_path: str = "./index", collection_name: str = "rag"
+        self, index_path: str = "./vector_store", collection_name: str = "rag"
     ) -> None:
         """Initialize the Qdrant vector store.
 
@@ -70,9 +70,6 @@ class QdrantVectorStore:
             ),
         }
 
-        self.create_collection(collection_name=self.collection_name)
-        print(f"Collection {self.collection_name} created")
-
     def _collection_exists(self, collection_name: Optional[str] = None):
         """Check if a collection exists."""
         if not collection_name:
@@ -98,6 +95,12 @@ class QdrantVectorStore:
             return True
         return False
 
+    def _ensure_collection_exists(self):
+        """Ensure the collection exists, creating it if necessary."""
+        if not self._collection_exists():
+            self.create_collection(self.collection_name)
+            print(f"Collection {self.collection_name} created")
+
     @Timer("Upload Batch Vectors")
     def upload_batch_vectors(
         self,
@@ -107,6 +110,7 @@ class QdrantVectorStore:
         payload_batch: list[dict],
     ):
         """Upload a batch of vectors to the collection."""
+        self._ensure_collection_exists()
         try:
             self.client.upload_collection(
                 collection_name=self.collection_name,
@@ -133,6 +137,8 @@ class QdrantVectorStore:
         if collection_name:
             if self._collection_exists(collection_name=collection_name):
                 self.collection_name = collection_name
+
+        self._ensure_collection_exists()
 
         search_queries = [
             models.QueryRequest(
@@ -171,6 +177,7 @@ class QdrantVectorStore:
         payloads: list[dict],
     ):
         """Upsert a list of points (multivector) to Qdrant using PointStruct.vectors."""
+        self._ensure_collection_exists()
         points = []
         for _id, orig, prow, pcol, payload in zip(
             ids, originals, pooled_rows, pooled_cols, payloads

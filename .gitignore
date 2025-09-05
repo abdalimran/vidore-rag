@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+vector_store/
 
 # C extensions
 *.so
@@ -169,3 +170,4 @@ Thumbs.db
 # index/
 # *.sqlite
 # .python-version
+uploaded_pdfs/
