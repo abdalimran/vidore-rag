@@ -1,0 +1,9 @@
+colpali-engine
+litellm
+numpy
+pdf2image
+pillow
+python-dotenv
+qdrant-client
+streamlit
+torch

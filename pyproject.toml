@@ -1,0 +1,46 @@
+[project]
+name = "vidore-rag"
+version = "0.1.0"
+description = "A Retrieval-Augmented Generation system for document analysis"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+maintainers = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+keywords = ["rag", "retrieval", "generation", "document-analysis", "vision-language"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "colpali-engine>=0.3.12",
+    "litellm>=1.76.2",
+    "numpy>=2.3.2",
+    "pdf2image>=1.17.0",
+    "pillow>=11.3.0",
+    "python-dotenv>=1.1.1",
+    "qdrant-client>=1.15.1",
+    "streamlit>=1.28.0",
+    "torch>=2.7.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/vidore-rag"
+Repository = "https://github.com/yourusername/vidore-rag"
+Issues = "https://github.com/yourusername/vidore-rag/issues"
+Changelog = "https://github.com/yourusername/vidore-rag/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vidore_rag"]
